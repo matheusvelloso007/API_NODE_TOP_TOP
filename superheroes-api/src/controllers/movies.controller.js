@@ -1,0 +1,192 @@
+const Movie = require("../models/Movie");
+const Hero = require("../models/Hero");
+
+//mostrar todos filmes
+async function list(req, res) {
+    try {
+        const movies = await Movie.findAll({
+            include: Hero
+        });
+
+        return res.status(200).json(movies);
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Erro ao listar filmes.",
+            error: error.message
+        });
+    }
+}
+
+//buscar filme pelo id
+async function getById(req, res) {
+    try {
+        const movie = await Movie.findByPk(req.params.id, {
+            include: Hero
+        });
+
+        if (!movie) {
+            return res.status(404).json({
+                message: "Filme não encontrado."
+            });
+        }
+
+        return res.status(200).json(movie);
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Erro ao buscar filme.",
+            error: error.message
+        });
+    }
+}
+
+//cadastrar novo filme
+async function create(req, res) {
+    try {
+        const { title, year } = req.body;
+
+        if (!title || year === undefined || !Number.isInteger(Number(year))) {
+            return res.status(400).json({
+                message: "Título e ano válido são obrigatórios."
+            });
+        }
+
+        const movie = await Movie.create({
+            title,
+            year: Number(year)
+        });
+
+        return res.status(201).json(movie);
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Erro ao cadastrar filme.",
+            error: error.message
+        });
+    }
+}
+
+//mudar todos os dados 
+async function replace(req, res) {
+    try {
+        const movie = await Movie.findByPk(req.params.id);
+        if (!movie) {
+            return res.status(404).json({ message: "Filme não encontrado." });
+        }
+
+        const { title, year } = req.body;
+        if (!title || year === undefined || !Number.isInteger(Number(year))) {
+            return res.status(400).json({
+                message: "Para PUT, informe título e ano válido."
+            });
+        }
+
+        movie.title = title;
+        movie.year = Number(year);
+        await movie.save();
+
+        return res.status(200).json(movie);
+    } catch (error) {
+        return res.status(500).json({
+            message: "Erro ao substituir filme.",
+            error: error.message
+        });
+    }
+}
+
+//mudar apenas alguns dados do filme
+async function update(req, res) {
+    try {
+        const movie = await Movie.findByPk(req.params.id);
+        if (!movie) {
+            return res.status(404).json({ message: "Filme não encontrado." });
+        }
+
+        const { title, year } = req.body;
+        if (title === undefined && year === undefined) {
+            return res.status(400).json({
+                message: "Informe pelo menos um campo para atualizar."
+            });
+        }
+
+        if (title !== undefined) movie.title = title;
+
+        if (year !== undefined) {
+            if (!Number.isInteger(Number(year))) {
+                return res.status(400).json({
+                    message: "O ano deve ser um número inteiro."
+                });
+            }
+            movie.year = Number(year);
+        }
+
+        await movie.save();
+        return res.status(200).json(movie);
+    } catch (error) {
+        return res.status(500).json({
+            message: "Erro ao atualizar filme.",
+            error: error.message
+        });
+    }
+}
+
+
+//deletar filme
+async function remove(req, res) {
+    try {
+        const movie = await Movie.findByPk(req.params.id);
+
+        if (!movie) {
+            return res.status(404).json({
+                message: "Filme não encontrado."
+            });
+        }
+
+        await movie.destroy();
+
+        return res.status(200).json({
+            message: "Filme excluído com sucesso."
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Erro ao excluir filme.",
+            error: error.message
+        });
+    }
+}
+
+
+//mostrar herois do filme
+async function listHeroes(req, res) {
+    try {
+        const movie = await Movie.findByPk(req.params.id);
+
+        if (!movie) {
+            return res.status(404).json({
+                message: "Filme não encontrado."
+            });
+        }
+
+        const heroes = await movie.getHeroes();
+
+        return res.status(200).json(heroes);
+
+    } catch (error) {
+        return res.status(500).json({
+            message: "Erro ao listar heróis.",
+            error: error.message
+        });
+    }
+}
+
+module.exports = {
+    list,
+    getById,
+    create,
+    replace,
+    update,
+    remove,
+    listHeroes
+};
